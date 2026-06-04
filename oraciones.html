@@ -90,6 +90,8 @@
   .prayer-block { margin-bottom: 24px; }
   .prayer-text { font-size: 15px; font-weight: 400; line-height: 1.85; color: var(--ink-soft); letter-spacing: 0.01em; }
   .prayer-text.poetic { white-space: pre-line; }
+  /* Render emphasized tags inside prayers without bold to satisfy request */
+  .prayer-text strong { font-weight: 400; font-style: inherit; }
   .prayer-text em { font-style: italic; color: var(--ink-muted); font-size: 13px; font-weight: 400; }
   .prayer-text strong { font-weight: 600; color: var(--ink); }
 
@@ -465,7 +467,8 @@ Pasión de Cristo, confortame;
 ¡Oh buen Jesús!, óyeme;
 Dentro de tus llagas, ocúltame;
 No permitas que me separe de ti;
-En la hora de mi muerte, llámame. Amén.</strong></div></div>` },
+En la hora de mi muerte, llámame.
+Y mándame ir a Ti para que con tus santos te alabe. Por los siglos de los siglos. Amén.</strong></div></div>` },
   { title: 'Bendición y Envío', subtitle: 'Conclusión de la Misa', section: 'Ritos Finales', content: `<div class="prayer-block"><div class="exchange"><span class="role role-sacerdote">Sacerdote</span><div class="prayer-text poetic">La paz del Señor esté siempre con vosotros.</div></div><div class="exchange" style="margin-top: 18px"><span class="role role-pueblo">Pueblo</span><div class="prayer-text poetic">Y con tu espíritu.</div></div><div class="exchange" style="margin-top: 18px"><span class="role role-sacerdote">Sacerdote</span><div class="prayer-text poetic">Podéis ir en paz.</div></div><div class="exchange" style="margin-top: 18px"><span class="role role-pueblo">Pueblo</span><div class="prayer-text poetic"><strong>Demos gracias al Señor.</strong></div></div></div>`}
 ];
 
