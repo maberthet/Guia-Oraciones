@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Oraciones Católicas</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  :root {
+    --cream: #FEFDFB;
+    --parchment: #F5F0E8;
+    --taupe: #E8DFD3;
+    --gold: #A89968;
+    --gold-light: #C4B59A;
+    --gold-dark: #7A6F57;
+    --ink: #1A1815;
+    --ink-soft: #3E3A35;
+    --ink-muted: #6F6A63;
+    --divider: #E0D7CC;
+    --shadow-sm: 0 2px 8px rgba(26, 24, 21, 0.06);
+    --shadow-md: 0 8px 24px rgba(26, 24, 21, 0.09);
+    --border-radius: 12px;
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  html, body { height: 100%; background: var(--cream); font-family: 'Lora', serif; color: var(--ink); overflow: hidden; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+  .app { display: flex; flex-direction: column; height: 100vh; max-width: 480px; margin: 0 auto; background: var(--cream); position: relative; overflow: hidden; box-shadow: 0 0 40px rgba(26, 24, 21, 0.08); }
+  .screen { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--cream); transition: opacity 0.4s ease, transform 0.4s ease; }
+  .screen.hidden { opacity: 0; pointer-events: none; transform: translateY(20px); }
+  .screen.visible { opacity: 1; pointer-events: all; transform: translateY(0); }
+
+  .home-header { padding: 60px 36px 32px; background: linear-gradient(135deg, rgba(168, 153, 104, 0.04) 0%, rgba(168, 153, 104, 0.02) 100%); }
+  .home-label { font-family: 'Cormorant Garamond', serif; font-size: 11px; font-weight: 600; letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold-dark); margin-bottom: 12px; }
+  .home-title { font-family: 'Cormorant Garamond', serif; font-size: 48px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.05; color: var(--ink); }
+  .home-subtitle { font-size: 14px; color: var(--ink-muted); margin-top: 12px; line-height: 1.7; }
+  .home-divider { width: 48px; height: 1.5px; background: var(--gold); margin: 28px 0 0; }
+
+  .guide-list { flex: 1; overflow-y: auto; padding: 32px 24px 48px; scroll-behavior: smooth; }
+  .guide-list::-webkit-scrollbar { width: 5px; }
+  .guide-list::-webkit-scrollbar-thumb { background: var(--taupe); border-radius: 3px; }
+
+  .guide-card { display: flex; align-items: center; gap: 20px; padding: 24px; margin-bottom: 14px; background: var(--parchment); border-radius: var(--border-radius); cursor: pointer; transition: var(--transition); border: 1.5px solid transparent; box-shadow: var(--shadow-sm); }
+  .guide-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--gold-light); }
+  .guide-card:active { transform: translateY(0); opacity: 0.95; }
+
+  .guide-icon { width: 52px; height: 52px; border-radius: var(--border-radius); background: linear-gradient(135deg, rgba(168, 153, 104, 0.12), rgba(168, 153, 104, 0.06)); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .guide-icon svg { width: 24px; height: 24px; }
+
+  .guide-info { flex: 1; }
+  .guide-name { font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 600; color: var(--ink); letter-spacing: -0.01em; }
+  .guide-desc { font-size: 13px; color: var(--ink-muted); margin-top: 4px; }
+  .guide-arrow { color: var(--gold); flex-shrink: 0; transition: var(--transition); }
+  .guide-card:hover .guide-arrow { transform: translateX(2px); }
+
+  .guide-header { padding: 24px 28px 20px; background: var(--cream); border-bottom: 1.5px solid var(--divider); flex-shrink: 0; }
+  .guide-header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .btn-menu { background: none; border: none; cursor: pointer; padding: 8px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; color: var(--ink-muted); transition: var(--transition); border-radius: 8px; }
+  .btn-menu:hover { background: var(--parchment); color: var(--gold-dark); }
+  .btn-menu svg { width: 20px; height: 20px; }
+
+  .guide-header-title { font-family: 'Cormorant Garamond', serif; font-size: 12px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold-dark); }
+  .step-counter { font-size: 12px; font-weight: 600; letter-spacing: 0.08em; color: var(--gold); }
+
+  .progress-track { height: 3px; background: var(--taupe); border-radius: 2px; overflow: hidden; margin-bottom: 14px; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--gold-dark), var(--gold-light)); border-radius: 2px; transition: width 0.6s cubic-bezier(0.4,0,0.2,1); }
+
+  .section-label { display: flex; align-items: center; gap: 10px; }
+  .section-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--gold); flex-shrink: 0; }
+  .section-name { font-family: 'Cormorant Garamond', serif; font-size: 11px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold-dark); }
+
+  .content-area { flex: 1; overflow-y: auto; padding: 36px 28px 28px; -webkit-overflow-scrolling: touch; scroll-behavior: smooth; }
+  .content-area::-webkit-scrollbar { width: 5px; }
+  .content-area::-webkit-scrollbar-thumb { background: var(--taupe); border-radius: 3px; }
+
+  .slide { display: none; animation: fadeSlide 0.5s ease forwards; }
+  .slide.active { display: block; }
+  @keyframes fadeSlide { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+  .prayer-title { font-family: 'Cormorant Garamond', serif; font-size: 32px; font-weight: 600; line-height: 1.15; color: var(--ink); margin-bottom: 8px; letter-spacing: -0.015em; }
+  .prayer-subtitle { font-size: 13px; font-weight: 500; color: var(--ink-muted); letter-spacing: 0.08em; margin-bottom: 24px; }
+  .divider { width: 40px; height: 2px; background: var(--gold); margin-bottom: 28px; border-radius: 1px; }
+
+  .role { display: inline-block; font-size: 10px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; padding: 5px 12px; border-radius: 20px; margin-bottom: 10px; font-family: 'Cormorant Garamond', serif; }
+  .role-pueblo { background: rgba(196, 181, 154, 0.15); color: var(--gold-dark); }
+  .role-sacerdote { background: rgba(122, 111, 87, 0.1); color: var(--ink-soft); }
+  .role-todos { background: rgba(168, 153, 104, 0.15); color: var(--gold-dark); }
+
+  .prayer-block { margin-bottom: 24px; }
+  .prayer-text { font-size: 15px; font-weight: 400; line-height: 1.85; color: var(--ink-soft); letter-spacing: 0.01em; }
+  .prayer-text.poetic { white-space: pre-line; }
+  .prayer-text em { font-style: italic; color: var(--ink-muted); font-size: 13px; font-weight: 400; }
+  .prayer-text strong { font-weight: 600; color: var(--ink); }
+
+  .exchange { border-left: 2.5px solid var(--gold-light); padding-left: 18px; margin-bottom: 18px; }
+  .note-box { background: linear-gradient(135deg, rgba(168, 153, 104, 0.08), rgba(168, 153, 104, 0.04)); border-radius: var(--border-radius); padding: 16px 18px; margin-bottom: 20px; border-left: 3px solid var(--gold); box-shadow: var(--shadow-sm); }
+  .note-box p { font-size: 13px; color: var(--ink-soft); line-height: 1.7; font-style: italic; }
+
+  .verse-box { background: var(--parchment); border-radius: var(--border-radius); padding: 18px 20px; margin-bottom: 24px; border: 1px solid var(--divider); box-shadow: var(--shadow-sm); }
+  .verse-ref { font-family: 'Cormorant Garamond', serif; font-size: 10px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold-dark); margin-bottom: 12px; }
+  .verse-text { font-size: 14px; font-weight: 400; line-height: 1.8; color: var(--ink-soft); }
+
+  .ave-counter { display: flex; flex-direction: column; align-items: center; margin: 24px 0 28px; }
+  .ave-dots-wrapper { display: flex; flex-direction: column; gap: 10px; align-items: center; margin-bottom: 16px; }
+  .ave-dots { display: flex; gap: 10px; justify-content: center; }
+  .ave-dot { width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid var(--divider); background: var(--cream); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: var(--transition); font-size: 11px; font-weight: 600; color: var(--ink-muted); }
+  .ave-dot:hover { border-color: var(--gold-light); }
+  .ave-dot.done { background: var(--gold); border-color: var(--gold-dark); color: var(--cream); }
+  .ave-dot.current { border-color: var(--gold-dark); color: var(--gold-dark); box-shadow: 0 0 0 3px rgba(168, 153, 104, 0.1); }
+  .ave-count-label { font-size: 12px; font-weight: 600; letter-spacing: 0.1em; color: var(--ink-muted); text-transform: uppercase; }
+  .btn-reset-ave { margin-top: 12px; background: none; border: 1.5px solid var(--divider); border-radius: 20px; padding: 7px 18px; font-family: 'Lora', serif; font-size: 12px; font-weight: 600; color: var(--ink-muted); cursor: pointer; letter-spacing: 0.08em; transition: var(--transition); }
+  .btn-reset-ave:hover { border-color: var(--gold-light); color: var(--gold-dark); background: var(--parchment); }
+
+  .mystery-header { padding: 32px 28px 24px; border-bottom: 1.5px solid var(--divider); }
+  .mystery-back { display: flex; align-items: center; gap: 8px; background: none; border: none; cursor: pointer; padding: 0 0 16px; color: var(--ink-muted); font-family: 'Lora', serif; font-size: 13px; font-weight: 500; transition: var(--transition); }
+  .mystery-back:hover { color: var(--gold-dark); }
+  .mystery-title { font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 600; letter-spacing: -0.01em; }
+  .mystery-subtitle { font-size: 13px; color: var(--ink-muted); margin-top: 6px; }
+  .mystery-list { flex: 1; overflow-y: auto; padding: 20px 24px 48px; }
+  .mystery-card { display: flex; align-items: center; gap: 16px; padding: 20px; margin-bottom: 12px; background: var(--parchment); border-radius: var(--border-radius); cursor: pointer; transition: var(--transition); border: 1.5px solid transparent; box-shadow: var(--shadow-sm); }
+  .mystery-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--gold-light); }
+  .mystery-color { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+  .mystery-info { flex: 1; }
+  .mystery-name { font-family: 'Cormorant Garamond', serif; font-size: 16px; font-weight: 600; color: var(--ink); }
+  .mystery-day { font-size: 12px; color: var(--ink-muted); margin-top: 3px; }
+
+  .bottom-nav { padding: 20px 28px 32px; background: var(--cream); border-top: 1.5px solid var(--divider); flex-shrink: 0; }
+  .nav-buttons { display: flex; gap: 12px; align-items: center; }
+  .btn-back-nav { width: 50px; height: 50px; border-radius: 50%; border: 1.5px solid var(--divider); background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--ink-muted); transition: var(--transition); flex-shrink: 0; }
+  .btn-back-nav:hover { background: var(--parchment); border-color: var(--gold-light); color: var(--gold-dark); }
+  .btn-back-nav:active { transform: scale(0.96); }
+  .btn-back-nav:disabled { opacity: 0.4; cursor: default; }
+  .btn-back-nav svg { width: 20px; height: 20px; }
+
+  .btn-next { flex: 1; height: 50px; border-radius: 26px; border: none; background: linear-gradient(135deg, var(--gold-dark), var(--gold)); color: var(--cream); font-family: 'Cormorant Garamond', serif; font-size: 14px; font-weight: 600; letter-spacing: 0.1em; cursor: pointer; transition: var(--transition); display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 16px rgba(122, 111, 87, 0.2); }
+  .btn-next:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(122, 111, 87, 0.28); }
+  .btn-next:active { transform: translateY(0); }
+  .btn-next.final { background: linear-gradient(135deg, var(--gold), var(--gold-light)); }
+
+  .index-screen { display: none; position: absolute; inset: 0; background: var(--cream); z-index: 100; overflow-y: auto; padding: 40px 28px 48px; animation: fadeSlide 0.3s ease; }
+  .index-screen.open { display: block; }
+  .index-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; }
+  .index-title { font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 600; letter-spacing: -0.01em; }
+  .btn-close { width: 40px; height: 40px; border-radius: 50%; border: 1.5px solid var(--divider); background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--ink-muted); transition: var(--transition); }
+  .btn-close:hover { background: var(--parchment); border-color: var(--gold-light); color: var(--gold-dark); }
+
+  .index-section-title { font-family: 'Cormorant Garamond', serif; font-size: 11px; font-weight: 700; letter-spacing: 0.25em; text-transform: uppercase; color: var(--gold-dark); margin: 24px 0 12px; }
+  .index-item { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--divider); cursor: pointer; transition: opacity 0.15s; }
+  .index-item:active { opacity: 0.7; }
+  .index-num { font-family: 'Cormorant Garamond', serif; font-size: 12px; font-weight: 700; color: var(--gold); width: 24px; text-align: right; flex-shrink: 0; }
+  .index-item-name { font-size: 14px; font-weight: 500; color: var(--ink-soft); }
+  .index-item-name small { display: block; font-size: 12px; color: var(--ink-muted); font-weight: 400; margin-top: 2px; }
+
+  .completed-overlay { display: none; position: absolute; inset: 0; background: var(--cream); z-index: 50; flex-direction: column; align-items: center; justify-content: center; padding: 48px 36px; text-align: center; }
+  .completed-overlay.show { display: flex; animation: fadeSlide 0.5s ease; }
+  .completed-cross { margin-bottom: 32px; opacity: 0.9; }
+  .completed-title { font-family: 'Cormorant Garamond', serif; font-size: 36px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 12px; }
+  .completed-subtitle { font-size: 14px; color: var(--ink-muted); line-height: 1.8; margin-bottom: 40px; white-space: pre-line; }
+  .btn-home-return { padding: 14px 36px; border-radius: 26px; background: linear-gradient(135deg, var(--gold-dark), var(--gold)); color: var(--cream); font-family: 'Cormorant Garamond', serif; font-size: 14px; font-weight: 600; border: none; cursor: pointer; letter-spacing: 0.08em; transition: var(--transition); box-shadow: 0 4px 16px rgba(122, 111, 87, 0.2); }
+  .btn-home-return:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(122, 111, 87, 0.28); }
+
+  @media (max-height: 600px) { .home-header { padding: 40px 36px 24px; } .home-title { font-size: 36px; } .guide-list { padding: 24px 24px 40px; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="screen visible" id="homeScreen">
+    <div class="home-header">
+      <div class="home-label">Guía Espiritual</div>
+      <div class="home-title">Oraciones<br>Católicas</div>
+      <div class="home-divider"></div>
+      <div class="home-subtitle">Acompañamiento para la oración personal y comunitaria.</div>
+    </div>
+    <div class="guide-list">
+      <div class="guide-card" onclick="startGuide('misa')"><div class="guide-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--gold-dark)" stroke-width="2" stroke-linecap="round"><line x1="12" y1="3" x2="12" y2="21"/><line x1="5" y1="9" x2="19" y2="9"/></svg></div><div class="guide-info"><div class="guide-name">Santa Misa</div><div class="guide-desc">12 momentos · Oraciones completas</div></div><svg class="guide-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+      <div class="guide-card" onclick="startGuide('angelus')"><div class="guide-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--gold-dark)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div><div class="guide-info"><div class="guide-name">Angelus</div><div class="guide-desc">Tiempo ordinario · 6 am, 12 pm y 6 pm</div></div><svg class="guide-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+      <div class="guide-card" onclick="startGuide('reginacaeli')"><div class="guide-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--gold-dark)" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="7" r="3"/><path d="M12 10v4"/><path d="M9 20h6"/><path d="M10 14l-2 6"/><path d="M14 14l2 6"/></svg></div><div class="guide-info"><div class="guide-name">Regina Caeli</div><div class="guide-desc">Tiempo pascual · Reemplaza el Angelus</div></div><svg class="guide-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+      <div class="guide-card" onclick="startGuide('rosario')"><div class="guide-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--gold-dark)" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="5" r="2"/><circle cx="19" cy="12" r="2"/><circle cx="12" cy="19" r="2"/><circle cx="5" cy="12" r="2"/><path d="M12 7L19 10M19 14L12 17M12 17L5 14M5 10L12 7"/></svg></div><div class="guide-info"><div class="guide-name">Rosario</div><div class="guide-desc">4 misterios · Gozosos, Luminosos, Dolorosos, Gloriosos</div></div><svg class="guide-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </div>
+  </div>
+
+  <div class="screen hidden" id="mysteryScreen">
+    <div class="mystery-header"><button class="mystery-back" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg> Volver</button><div class="mystery-title">Rosario</div><div class="mystery-subtitle">Selecciona los misterios a rezar.</div></div>
+    <div class="mystery-list">
+      <div class="mystery-card" onclick="startRosario('gozosos')"><div class="mystery-color" style="background:#B8975A"></div><div class="mystery-info"><div class="mystery-name">Misterios Gozosos</div><div class="mystery-day">Lunes y Sábado</div></div><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+      <div class="mystery-card" onclick="startRosario('luminosos')"><div class="mystery-color" style="background:#4A8FA8"></div><div class="mystery-info"><div class="mystery-name">Misterios Luminosos</div><div class="mystery-day">Jueves</div></div><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+      <div class="mystery-card" onclick="startRosario('dolorosos')"><div class="mystery-color" style="background:#7A4A7A"></div><div class="mystery-info"><div class="mystery-name">Misterios Dolorosos</div><div class="mystery-day">Martes y Viernes</div></div><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+      <div class="mystery-card" onclick="startRosario('gloriosos')"><div class="mystery-color" style="background:#6B8B4A"></div><div class="mystery-info"><div class="mystery-name">Misterios Gloriosos</div><div class="mystery-day">Miércoles y Domingo</div></div><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </div>
+  </div>
+
+  <div class="screen hidden" id="guideScreen">
+    <div class="index-screen" id="indexScreen"><div class="index-header"><span class="index-title">Índice</span><button class="btn-close" onclick="closeIndex()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div><div id="indexList"></div></div>
+    <div class="completed-overlay" id="completedOverlay"><div class="completed-cross"><svg width="56" height="56" viewBox="0 0 48 48" fill="none"><rect x="20" y="4" width="8" height="40" rx="2" fill="#A89968"/><rect x="4" y="16" width="40" height="8" rx="2" fill="#A89968"/></svg></div><div class="completed-title" id="completedTitle">Completado</div><div class="completed-subtitle" id="completedSubtitle"></div><button class="btn-home-return" onclick="goHome()">Volver al inicio</button></div>
+    <div class="guide-header"><div class="guide-header-top"><button class="btn-menu" onclick="openIndex()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button><span class="guide-header-title" id="guideHeaderTitle"></span><span class="step-counter" id="stepCounter">1 / 1</span></div><div class="progress-track"><div class="progress-fill" id="progressFill" style="width:5%"></div></div><div class="section-label"><div class="section-dot"></div><span class="section-name" id="sectionName"></span></div></div>
+    <div class="content-area" id="contentArea"></div>
+    <div class="bottom-nav"><div class="nav-buttons"><button class="btn-back-nav" id="btnBack" onclick="navigate(-1)" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></button><button class="btn-next" id="btnNext" onclick="navigate(1)"><span id="btnNextLabel">Siguiente</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></button></div></div>
+  </div>
+</div>
+
+<script>
+const AVE_FULL = `<div class="exchange"><span class="role role-todos">Todos</span><div class="prayer-text poetic"><strong>Dios te salve, María,
+llena eres de gracia, el Señor es contigo.
+Bendita tú eres entre todas las mujeres,
+y bendito es el fruto de tu vientre, Jesús.
+
+Santa María, Madre de Dios,
+ruega por nosotros, pecadores,
+ahora y en la hora de nuestra muerte. Amén.</strong></div></div>`;
+
+const GLORIA_FULL = `<div class="exchange"><span class="role role-todos">Todos</span><div class="prayer-text poetic"><strong>Gloria al Padre, y al Hijo,
+y al Espíritu Santo.
+Como era en el principio,
+ahora y siempre,
+por los siglos de los siglos. Amén.</strong></div></div>`;
+
+const CREDO_FULL = `<div class="prayer-text poetic"><strong>Creo en Dios, Padre todopoderoso,
+creador del cielo y de la tierra.
+Creo en Jesucristo, su único Hijo, nuestro Señor,
+que fue concebido por obra y gracia del Espíritu Santo,
+nació de Santa María Virgen,
+padeció bajo el poder de Poncio Pilato,
+fue crucificado, muerto y sepultado,
+descendió a los infiernos,
+al tercer día resucitó de entre los muertos,
+subió a los cielos
+y está sentado a la derecha de Dios, Padre todopoderoso.
+Desde allí ha de venir a juzgar a vivos y muertos.
+Creo en el Espíritu Santo,
+la santa Iglesia católica,
+la comunión de los santos,
+el perdón de los pecados,
+la resurrección de la carne
+y la vida eterna. Amén.</strong></div>`;
+
+
+const AVE_R = `<div class="prayer-text poetic"><strong>Dios te salve, María,
+llena eres de gracia, el Señor es contigo.
+Bendita tú eres entre todas las mujeres,
+y bendito es el fruto de tu vientre, Jesús.
+
+Santa María, Madre de Dios,
+ruega por nosotros, pecadores,
+ahora y en la hora de nuestra muerte. Amén.</strong></div>`;
+
+const PADRE_R = `<div class="prayer-text poetic"><strong>Padre nuestro, que estás en el cielo,
+santificado sea tu Nombre;
+venga a nosotros tu reino;
+hágase tu voluntad
+en la tierra como en el cielo.
+
+Danos hoy nuestro pan de cada día;
+perdona nuestras ofensas,
+como también nosotros perdonamos
+a los que nos ofenden;
+no nos dejes caer en la tentación,
+y líbranos del mal. Amén.</strong></div>`;
+
+const GLORIA_R = `<div class="prayer-text poetic"><strong>Gloria al Padre, y al Hijo,
+y al Espíritu Santo.
+Como era en el principio,
+ahora y siempre,
+por los siglos de los siglos. Amén.</strong></div>`;
+
+const JACULATORIA = `<div class="prayer-text poetic" style="margin-top: 40px"><em>Jaculatoria de Fátima:</em>
+<strong>Oh Jesús mío, perdona nuestros pecados,
+líbranos del fuego del infierno,
+lleva al cielo a todas las almas,
+especialmente a las más necesitadas
+de tu misericordia. Amén.</strong></div>`;
+
+const MISTERIOS = {
+  gozosos: { label: 'Misterios Gozosos', mysteries: [
+    { title: 'La Anunciación', ref: 'Lc 1, 26–38', verse: '<strong>El ángel Gabriel fue enviado por Dios a una ciudad de Galilea llamada Nazaret, a una virgen desposada con un hombre llamado José, de la casa de David; y el nombre de la virgen era María. Entrando, le dijo: "¡Alégrate! Llena eres de gracia; el Señor está contigo."</strong> Ella se sorprendió al oír estas palabras y se preguntaba qué significaba aquel saludo. El ángel le dijo: "No tengas miedo, María, pues has encontrado gracia ante Dios. Concebirás en tu vientre y darás a luz un hijo, a quien pondrás por nombre Jesús."' },
+    { title: 'La Visitación', ref: 'Lc 1, 39–45', verse: '<strong>María se levantó y fue presurosa a la región montañosa, a una ciudad de Judá.</strong> Entró en casa de Zacarías y saludó a Isabel. Cuando Isabel oyó el saludo de María, la criatura saltó en su seno, e Isabel quedó llena del Espíritu Santo. Y exclamó con gran voz: "¡Bendita tú entre las mujeres y bendito el fruto de tu vientre!"' },
+    { title: 'El Nacimiento', ref: 'Lc 2, 6–14', verse: '<strong>Mientras estaban allí le llegó el momento del parto, y dio a luz a su hijo primogénito, lo envolvió en pañales y lo acostó en un pesebre, porque no había lugar para ellos en la posada.</strong> Había en la región unos pastores que dormían al raso y vigilaban por la noche sus rebaños. <strong>De repente se les presentó un ángel del Señor y la gloria del Señor los envolvió de luz, y sintieron un gran miedo.</strong> El ángel les dijo: "No tengáis miedo; os anuncio una noticia que traerá alegría a todo el pueblo: os ha nacido hoy, en la ciudad de David, un Salvador, que es Cristo el Señor."' },
+    { title: 'La Presentación', ref: 'Lc 2, 25–32', verse: '<strong>Había un hombre en Jerusalén llamado Simeón, hombre justo y temeroso de Dios, que esperaba la consolación de Israel, y el Espíritu Santo estaba sobre él.</strong> Había recibido un oráculo del Espíritu Santo que no vería la muerte antes de haber visto al Cristo del Señor. Guiado por el Espíritu fue al Templo. Y cuando los padres introducían al niño Jesús, Simeón lo tomó en sus brazos y bendijo a Dios diciendo: "Ahora, Señor, despides a tu siervo en paz, según tu palabra."' },
+    { title: 'El Niño perdido y hallado', ref: 'Lc 2, 46–52', verse: '<strong>Después de tres días lo encontraron en el Templo, sentado entre los maestros, escuchándoles y haciéndoles preguntas.</strong> Todos los que le oían estaban asombrados de su inteligencia y de sus respuestas. Cuando le vieron quedaron sorprendidos, y su madre le dijo: "Hijo, ¿por qué nos has hecho esto? Mira que tu padre y yo te buscábamos angustiados." Él les respondió: "¿Por qué me buscabais? ¿No sabíais que yo debía estar en la casa de mi Padre?" Y bajó con ellos a Nazaret y vivía sujeto a ellos.' }
+  ]},
+  luminosos: { label: 'Misterios Luminosos', mysteries: [
+    { title: 'El Bautismo en el Jordán', ref: 'Mt 3, 13–17', verse: '<strong>Jesús vino desde Galilea al Jordán donde Juan estaba, para ser bautizado por él.</strong> Juan quería impedírselo diciendo: "Soy yo quien necesito ser bautizado por ti, ¿y tú vienes a mí?" Pero Jesús le respondió: "Déjalo ahora, pues conviene que así cumplamos toda justicia." Entonces Juan consintió. <strong>Cuando Jesús fue bautizado, subió inmediatamente del agua y se abrieron los cielos. Vio al Espíritu de Dios que bajaba como una paloma y se posaba sobre él. Y una voz que salía de los cielos decía: "Este es mi Hijo amado, en quien tengo mis complacencias."</strong>' },
+    { title: 'Las Bodas de Caná', ref: 'Jn 2, 1–11', verse: '<strong>Tres días después había una boda en Caná de Galilea, y estaba allí la madre de Jesús. Fueron invitados también Jesús y sus discípulos.</strong> Faltó el vino, y la madre de Jesús le dijo: "No tienen vino." Jesús le respondió: "¿Qué tiene que ver eso conmigo y contigo, mujer? Todavía no ha llegado mi hora." <strong>Su madre dijo a los sirvientes: "Haced lo que él os diga."</strong> Jesús dijo a los sirvientes: "Llenad de agua las tinajas." Y las llenaron hasta el borde.' },
+    { title: 'La Proclamación del Reino', ref: 'Mc 1, 14–20', verse: '<strong>Después que Juan fue encarcelado, Jesús vino a Galilea predicando la buena nueva de Dios, diciendo: "Se ha cumplido el tiempo y se ha acercado el Reino de Dios; convertíos y creed en la buena nueva."</strong> Pasando junto al mar de Galilea vio a Simón y a Andrés, hermano de Simón, que echaban la red en el mar, pues eran pescadores. Jesús les dijo: "Venid conmigo y os haré llegar a ser pescadores de hombres." Y ellos, al instante, dejando las redes, lo siguieron.' },
+    { title: 'La Transfiguración', ref: 'Mt 17, 1–8', verse: '<strong>Seis días después, Jesús tomó consigo a Pedro, a Santiago y a Juan, su hermano, y los llevó aparte a un monte alto. Y se transfiguró delante de ellos: su rostro resplandeció como el sol y sus vestidos se hicieron blancos como la luz. Y he aquí que se les aparecieron Moisés y Elías conversando con él.</strong> Pedro dijo a Jesús: "Señor, ¡qué bueno es para nosotros estar aquí!..."' },
+    { title: 'La Institución de la Eucaristía', ref: 'Mt 26, 26–29', verse: '<strong>Mientras comían, Jesús tomó el pan, pronunció la bendición, lo partió y dándolo a sus discípulos dijo: "Tomad, comed; este es mi Cuerpo." Luego tomó una copa y, dadas las gracias, la pasó a los discípulos diciendo: "Bebed todos de ella, pues esta es mi Sangre de la Alianza, que es derramada por muchos para remisión de los pecados."</strong>' }
+  ]},
+  dolorosos: { label: 'Misterios Dolorosos', mysteries: [
+    { title: 'La Agonía en el Huerto', ref: 'Lc 22, 39–46', verse: '<strong>Salió y se fue, como de costumbre, al monte de los Olivos; y sus discípulos lo siguieron. Cuando llegó a aquel lugar les dijo: "Orad para que no caigáis en tentación." Y él se apartó de ellos como a un tiro de piedra; hincándose de rodillas oraba diciendo: "Padre, si quieres, aparta de mí esta copa; pero no se haga mi voluntad, sino la tuya." Se le apareció un ángel del cielo que lo confortaba. Y en su angustia oraba más intensamente; y su sudor se hizo como gotas de sangre que caían en tierra.</strong>' },
+    { title: 'La Flagelación', ref: 'Jn 19, 1–5', verse: '<strong>Entonces Pilato tomó a Jesús y lo mandó azotar. Los soldados, tejiendo una corona de espinas, se la pusieron en la cabeza y le vistieron con un manto de púrpura; y se acercaban a él diciendo: "¡Salve, Rey de los judíos!" y le daban de bofetadas.</strong> Salió Jesús fuera llevando la corona de espinas y el manto de púrpura.' },
+    { title: 'La Coronación de Espinas', ref: 'Mt 27, 27–31', verse: '<strong>Entonces los soldados del procurador llevaron a Jesús al palacio y reunieron alrededor de él toda la cohorte. Le quitaron los vestidos y le pusieron un manto de púrpura; tejiendo una corona de espinas, se la pusieron en la cabeza, y una caña en la mano derecha; y doblando la rodilla ante él lo escarnecían diciendo: "¡Salve, Rey de los judíos!"</strong>' },
+    { title: 'El Camino del Calvario', ref: 'Lc 23, 26–31', verse: '<strong>Cuando lo llevaban hacia el lugar del Calvario, echaron mano de Simón, un cierto Simón de Cirene que venía del campo, y le cargaron la cruz para que la llevara detrás de Jesús.</strong> Lo seguía una gran multitud del pueblo y de mujeres que se lamentaban y gemían por él. Jesús se volvió hacia ellas y dijo: "Hijas de Jerusalén, no lloréis por mí; llorad por vosotras mismas."' },
+    { title: 'La Crucifixión', ref: 'Lc 23, 33–46', verse: '<strong>Cuando llegaron al lugar llamado de la Calavera, lo crucificaron a él y a los malhechores, uno a su derecha y otro a su izquierda. Y Jesús decía: "Padre, perdónalos, porque no saben lo que hacen."</strong> Y el sol se oscureció. <strong>Entonces Jesús, clamando con fuerte voz, dijo: "Padre, en tus manos encomiendo mi espíritu." Y diciendo esto, expiró.</strong>' }
+  ]},
+  gloriosos: { label: 'Misterios Gloriosos', mysteries: [
+    { title: 'La Resurrección', ref: 'Jn 20, 11–18', verse: '<strong>María estaba fuera junto al sepulcro llorando. Mientras lloraba, se asomó al sepulcro y vio dos ángeles vestidos de blanco sentados donde había estado el cuerpo de Jesús.</strong> Ellos le preguntaron: "¿Por qué lloras?" Ella les respondió: "Porque se han llevado a mi Señor." <strong>Al decir esto, se volvió y vio a Jesús de pie, pero no sabía que era Jesús. Jesús le dijo: "¡María!" Ella se volvió y le dijo: "¡Rabboni!" —que significa Maestro—.</strong>' },
+    { title: 'La Ascensión', ref: 'Hch 1, 9–11', verse: '<strong>Dicho esto, viéndolo ellos, fue elevado, y una nube lo ocultó de su vista. Y mientras miraban fijamente al cielo en el momento en que se iba, he aquí que dos hombres vestidos de blanco se les presentaron y les dijeron: "Galileos, ¿qué hacéis mirando al cielo?"</strong>' },
+    { title: 'La Venida del Espíritu Santo', ref: 'Hch 2, 1–4', verse: '<strong>Cuando llegó el día de Pentecostés, estaban todos juntos en el mismo lugar. De repente vino del cielo un ruido como el de una ráfaga de viento impetuoso que llenó toda la casa donde estaban sentados. Y se les aparecieron lenguas como de fuego que se repartían y se posaban sobre cada uno de ellos. Todos fueron llenos del Espíritu Santo.</strong>' },
+    { title: 'La Asunción de María', ref: 'Ap 12, 1–2', verse: '<strong>Apareció en el cielo una señal grandiosa: una mujer vestida del sol, con la luna bajo sus pies, y una corona de doce estrellas en la cabeza. Estaba embarazada, y gritaba con los dolores del parto.</strong>' },
+    { title: 'La Coronación de María', ref: 'Ap 12, 10', verse: '<strong>Entonces oí una voz potente en el cielo que decía: "Ahora ha llegado la salvación y el poder, y el reino de nuestro Dios."</strong> María intercede por nosotros como Reina y Madre, coronada de gloria en el cielo.' }
+  ]}
+};
+
+function buildRosarioSlides(tipo) {
+  const m = MISTERIOS[tipo];
+  const slides = [];
+  
+  slides.push({    title: 'Credo y Preparación',
+    subtitle: 'Fundamento de fe',
+    section: 'Introducción',
+    content: `<div class="prayer-block">${CREDO_FULL}<div class="note-box" style="margin-top: 20px"><p><em>Luego se reza un Padre Nuestro, tres Avemarías y un Gloria para preparar el Rosario.</em></p></div></div>`});
+
+  m.mysteries.forEach((myst, idx) => {
+    // Slide A: Leccionario
+    slides.push({
+      title: myst.title,
+      subtitle: `Misterio ${idx + 1} de ${m.label}`,
+      section: m.label,
+      content: `<div class="verse-box"><div class="verse-ref">${myst.ref}</div><div class="verse-text">${myst.verse}</div></div><div class="note-box"><p><em>Meditación:</em> Contempla este misterio en el que ${myst.title.toLowerCase()} ocurrió. Deja que tu corazón se abra a la presencia de Dios.</p></div><div class="prayer-block">${PADRE_R}</div>`
+    });
+
+    // Slide B: Avemaría con contador
+    slides.push({
+      title: `${myst.title} — Avemaría`,
+      subtitle: `Misterio ${idx + 1}: Reza 10 Avemarías`,
+      section: m.label,
+      isAve: true,
+      aveMysteryIdx: idx,
+      content: `${AVE_R}<div class="ave-counter"><div class="ave-dots-wrapper" id="aveDots_${idx}"></div><div class="ave-count-label" id="aveLabel_${idx}">0 de 10</div><button class="btn-reset-ave" onclick="resetAve(${idx})">Reiniciar</button></div>`
+    });
+
+    // Slide C: Gloria + Jaculatoria
+    slides.push({
+      title: `${myst.title} — Gloria`,
+      subtitle: `Misterio ${idx + 1}: Conclusión`,
+      section: m.label,
+      content: `${GLORIA_R}${JACULATORIA}`
+    });
+  });
+
+  slides.push({
+    title: 'Salve Regina',
+    subtitle: 'Oración final',
+    section: 'Conclusión',
+    content: `<div class="prayer-block"><div class="prayer-text poetic"><strong>Dios te salve, Reina y Madre de misericordia,
+vida, dulzura y esperanza nuestra, Dios te salve.
+A ti clamamos los desterrados hijos de Eva;
+a ti suspiramos, gimiendo y llorando
+en este valle de lágrimas.
+Ea, pues, Señora, abogada nuestra,
+vuelve a nosotros esos ojos misericordiosos,
+y después de este destierro,
+muéstranos a Jesús, fruto bendito de tu vientre.
+¡Oh clemente, oh piadosa, oh dulce Virgen María!
+Ruega por nosotros, santa Madre de Dios,
+para que seamos dignos de alcanzar
+las promesas de nuestro Señor Jesucristo. Amén.</strong></div></div>`
+  });
+
+  slides.push({
+    title: 'Sub Tuum Praesidium',
+    subtitle: 'Oración antigua a la Virgen',
+    section: 'Conclusión',
+    content: `<div class="prayer-block"><div class="prayer-text poetic"><strong>Bajo tu amparo nos acogemos,
+santa Madre de Dios;
+no desprecies nuestras súplicas
+en nuestras necesidades,
+sino líbranos siempre de todo peligro,
+oh Virgen gloriosa y bendita. Amén.</strong></div><div class="note-box" style="margin-top: 20px"><p><em>Una de las oraciones más antiguas a la Virgen María, que se remonta al siglo III.</em></p></div></div>`
+  });
+
+  return slides;
+}
+
+const MISA_SLIDES = [
+  { title: 'Entrada, Saludo y Acto Penitencial', subtitle: 'Ritos Iniciales', section: 'Santa Misa', content: `<div class="prayer-block"><div class="exchange"><span class="role role-sacerdote">Sacerdote</span><div class="prayer-text poetic">En el nombre del Padre, y del Hijo, y del Espíritu Santo.</div></div><div class="exchange" style="margin-top: 18px"><span class="role role-pueblo">Pueblo</span><div class="prayer-text poetic">Amén.</div></div><div class="exchange" style="margin-top: 18px"><span class="role role-todos">Todos</span><div class="prayer-text poetic"><strong>Yo confieso ante Dios todopoderoso
+y ante vosotros, hermanos,
+que he pecado gravemente.
+[Golpe de pecho]
+Por mi culpa, por mi culpa,
+por mi gravísima culpa.
+Señor, ten piedad. Cristo, ten piedad.
+Señor, ten piedad.</strong></div></div></div>` },
+  { title: 'Gloria y Oración Colecta', subtitle: 'Alabanza e intención', section: 'Ritos Iniciales', content: `<div class="prayer-block"><div class="prayer-text poetic"><strong>Gloria a Dios en el cielo,
+y en la tierra paz a los hombres que ama el Señor.
+Por tu inmensa gloria te alabamos,
+te bendecimos, te adoramos,
+te glorificamos,
+te damos gracias, Señor Dios, Rey celestial,
+Dios Padre todopoderoso.
+
+Señor, Hijo único, Jesucristo,
+Señor Dios, Cordero de Dios, Hijo del Padre;
+tú que quitas el pecado del mundo,
+ten piedad de nosotros;
+tú que estás sentado a la derecha del Padre,
+ten piedad de nosotros.
+
+Porque sólo tú eres Santo,
+sólo tú Señor,
+sólo tú Altísimo, Jesucristo. Amén.</strong></div></div><div class="note-box"><p><em>Se omite en Adviento y Cuaresma. Luego el sacerdote ora la Colecta del día.</em></p></div>` },
+  { title: 'Lecturas y Evangelio', subtitle: 'Palabra de Dios', section: 'Liturgia de la Palabra', content: '<div class="prayer-block"><div class="note-box"><p>Se proclaman las lecturas y el Evangelio del día. <strong>Pueblo responde: "Te alabamos, Señor" (Salmo) y "Gloria a ti, Señor Jesús" (Evangelio).</strong></p></div></div>' },
+  { title: 'Credo Niceno', subtitle: 'Profesión de fe', section: 'Liturgia de la Palabra', content: `<div class="prayer-block"><div class="prayer-text poetic"><strong>Creo en un solo Dios, Padre todopoderoso,
+creador del cielo y de la tierra,
+de todo lo visible y lo invisible.
+Creo en un solo Señor, Jesucristo, Hijo único de Dios,
+[inclinación profunda en la Encarnación]
+nacido del Padre antes de todos los siglos.
+Por nosotros, los hombres, y por nuestra salvación,
+bajó del cielo, y por obra del Espíritu Santo
+se encarnó de María, la Virgen, y se hizo hombre.
+Fue crucificado por nosotros bajo el poder de Poncio Pilato,
+y padeció y fue sepultado.
+Resucitó al tercer día, según las Escrituras,
+y subió al cielo. De nuevo vendrá con gloria
+para juzgar a vivos y muertos,
+y su reino no tendrá fin. Amén.</strong></div></div>` },
+  { title: 'Presentación de Dones', subtitle: 'Ofertorio', section: 'Liturgia Eucarística', content: `<div class="prayer-block"><div class="note-box"><p>Se preparan el pan y el vino en el altar.</p></div><div class="exchange" style="margin-top: 18px"><span class="role role-sacerdote">Sacerdote</span><div class="prayer-text poetic">Bendito seas, Señor,
+Dios del universo,
+por este pan que recibimos de tu generosidad.</div></div></div>` },
+  { title: 'Oración por la Iglesia', subtitle: 'Intercesión', section: 'Liturgia Eucarística', content: `<div class="prayer-block"><div class="exchange"><span class="role role-sacerdote">Sacerdote</span><div class="prayer-text poetic">Acuérdate, Señor, de tu Iglesia
+esparcida por toda la tierra.
+Haz que sea cada día más perfecta en la fe y en la caridad.
+Recuerda a todos los miembros de tu Iglesia
+y haz que trabajen unidos en tu gloria
+por tu santa Iglesia.</div></div></div>` },
+  { title: 'Prefacio y Santo', subtitle: 'Acción de gracias', section: 'Liturgia Eucarística', content: `<div class="prayer-block"><div class="exchange"><span class="role role-sacerdote">Sacerdote</span><div class="prayer-text poetic">El Señor esté con vosotros.</div></div><div class="exchange" style="margin-top: 18px"><span class="role role-pueblo">Pueblo</span><div class="prayer-text poetic">Y con tu espíritu.</div></div><div class="exchange" style="margin-top: 18px"><span class="role role-todos">Todos</span><div class="prayer-text poetic"><strong>Santo, Santo, Santo,
+es el Señor Dios del universo.
+Llenos están el cielo y la tierra de tu gloria.
+Hosanna en el cielo.
+Bendito el que viene en nombre del Señor.</strong></div></div></div>` },
+  { title: 'Consagración', subtitle: 'Momento central de la Misa', section: 'Liturgia Eucarística', content: `<div class="prayer-block"><div class="note-box"><p><em>El sacerdote pronuncia las palabras de la consagración.</em></p></div><div class="exchange" style="margin-top: 18px"><span class="role role-todos">Todos (aclamación)</span><div class="prayer-text poetic">Anunciamos tu muerte,
+proclamamos tu resurrección.
+Ven, Señor Jesús.</strong></div></div></div>` },
+  { title: 'Doxología', subtitle: 'Glorificación final', section: 'Liturgia Eucarística', content: `<div class="prayer-block"><div class="exchange"><span class="role role-sacerdote">Sacerdote</span><div class="prayer-text poetic">Por Cristo, con Cristo y en Cristo,
+a ti, Dios Padre Todopoderoso,
+en la unidad del Espíritu Santo,
+todo honor y toda gloria
+por los siglos de los siglos.</div></div><div class="exchange" style="margin-top: 18px"><span class="role role-pueblo">Pueblo</span><div class="prayer-text poetic">Amén.</div></div></div>` },
+  { title: 'Padre Nuestro y Paz', subtitle: 'Oración comunal y reconciliación', section: 'Ritos de Comunión', content: `<div class="prayer-block"><div class="prayer-text poetic">Padre nuestro, que estás en el cielo,
+santificado sea tu Nombre;
+venga a nosotros tu reino;
+hágase tu voluntad
+en la tierra como en el cielo.
+Danos hoy nuestro pan de cada día;
+perdona nuestras ofensas,
+como también nosotros perdonamos
+a los que nos ofenden;
+no nos dejes caer en la tentación,
+y líbranos del mal. Amén.</div></div>` },
+  { title: 'Cordero de Dios y Comunión', subtitle: 'Sacramento del Cuerpo y Sangre', section: 'Ritos de Comunión', content: `<div class="prayer-block"><div class="prayer-text poetic"><strong>Cordero de Dios,
+que quitas el pecado del mundo,
+ten piedad de nosotros.
+[Tres veces, la última:] danos la paz.</strong></div><div class="prayer-block" style="margin-top: 18px"><div class="exchange"><span class="role role-pueblo">Pueblo (antes de comulgar)</span><div class="prayer-text poetic"><strong>Señor, no soy digno de que entres en mi casa,
+pero una palabra tuya bastará para sanarme.</strong></div></div></div></div>` },
+  { title: 'Acción de Gracias', subtitle: 'Oración post-comunión', section: 'Ritos de Comunión', content: `<div class="prayer-block"><div class="prayer-text poetic"><strong>Alma de Cristo, santifícame;
+Cuerpo de Cristo, sálvame;
+Sangre de Cristo, emborráchame;
+Agua del costado de Cristo, lávame;
+Pasión de Cristo, confortame;
+¡Oh buen Jesús!, óyeme;
+Dentro de tus llagas, ocúltame;
+No permitas que me separe de ti;
+En la hora de mi muerte, llámame. Amén.</strong></div></div>` },
+  { title: 'Bendición y Envío', subtitle: 'Conclusión de la Misa', section: 'Ritos Finales', content: `<div class="prayer-block"><div class="exchange"><span class="role role-sacerdote">Sacerdote</span><div class="prayer-text poetic">La paz del Señor esté siempre con vosotros.</div></div><div class="exchange" style="margin-top: 18px"><span class="role role-pueblo">Pueblo</span><div class="prayer-text poetic">Y con tu espíritu.</div></div><div class="exchange" style="margin-top: 18px"><span class="role role-sacerdote">Sacerdote</span><div class="prayer-text poetic">Podéis ir en paz.</div></div><div class="exchange" style="margin-top: 18px"><span class="role role-pueblo">Pueblo</span><div class="prayer-text poetic"><strong>Demos gracias al Señor.</strong></div></div></div>`}
+];
+
+const ANGELUS_SLIDES = [
+  { title: 'Angelus', subtitle: 'La encarnación del Verbo', section: 'Angelus', content: '<div class="prayer-block"><div class="note-box"><p><strong>Se reza en Tiempo Ordinario a las 6:00 am, 12:00 pm y 6:00 pm.</strong></p></div></div>' },
+  { title: 'Primera Estrofa', subtitle: 'El Ángel del Señor', section: 'Angelus', content: `<div class="prayer-block"><div class="exchange"><span class="role role-sacerdote">Sacerdote/Lector (V.)</span><div class="prayer-text poetic">El Ángel del Señor anunció a María.</div></div><div class="exchange" style="margin-top: 18px"><span class="role role-pueblo">Pueblo (R.)</span><div class="prayer-text poetic">Y concibió por obra del Espíritu Santo.</div></div><div class="prayer-block" style="margin-top: 18px">${AVE_FULL}</div></div>` },
+  { title: 'Segunda Estrofa', subtitle: 'Dios se hizo carne', section: 'Angelus', content: `<div class="prayer-block"><div class="exchange"><span class="role role-sacerdote">Sacerdote/Lector (V.)</span><div class="prayer-text poetic">He aquí la esclava del Señor.</div></div><div class="exchange" style="margin-top: 18px"><span class="role role-pueblo">Pueblo (R.)</span><div class="prayer-text poetic">Hágase en mí según tu palabra.</div></div><div class="prayer-block" style="margin-top: 18px">${AVE_FULL}</div></div>` },
+  { title: 'Tercera Estrofa', subtitle: 'Y el Verbo se hizo carne', section: 'Angelus', content: `<div class="prayer-block"><div class="exchange"><span class="role role-sacerdote">Sacerdote/Lector (V.)</span><div class="prayer-text poetic">Y el Verbo se hizo carne.</div></div><div class="exchange" style="margin-top: 18px"><span class="role role-pueblo">Pueblo (R.)</span><div class="prayer-text poetic">Y habitó entre nosotros.</div></div><div class="prayer-block" style="margin-top: 18px">${AVE_FULL}</div></div>` },
+  { title: 'Versículo Final y Oración', subtitle: 'Súplica a la Virgen', section: 'Angelus', content: `<div class="prayer-block"><div class="exchange"><span class="role role-sacerdote">Sacerdote/Lector (V.)</span><div class="prayer-text poetic">Ruega por nosotros, santa Madre de Dios.</div></div><div class="exchange" style="margin-top: 18px"><span class="role role-pueblo">Pueblo (R.)</span><div class="prayer-text poetic">Para que seamos dignos de las promesas de Cristo.</div></div><div class="exchange" style="margin-top: 18px"><span class="role role-todos">Todos</span><div class="prayer-text poetic"><strong>Te pedimos, Señor,
+que derrames tu gracia en nuestras almas;
+ya que hemos conocido la Encarnación
+de tu Hijo Jesucristo por el anuncio del Ángel,
+concédenos que por su pasión y su cruz
+lleguemos a la gloria de la resurrección. Amén.</strong></div></div></div>` },
+  { title: 'Gloria', subtitle: 'Doxología trinitaria', section: 'Angelus', content: `<div class="prayer-block">${GLORIA_FULL}</div>` }
+];
+
+const REGINA_CAELI_SLIDES = [
+  { title: 'Regina Caeli', subtitle: 'La Reina del Cielo se alegra', section: 'Regina Caeli', content: '<div class="prayer-block"><div class="note-box"><p><strong>Se reza en Tiempo Pascual reemplazando al Angelus.</strong></p></div></div>' },
+  { title: 'Regina Caeli Laetare', subtitle: 'Antífona de la Resurrección', section: 'Regina Caeli', content: `<div class="prayer-block"><div class="exchange"><span class="role role-todos">Todos</span><div class="prayer-text poetic"><strong>¡Alégrate, Reina del cielo! Aleluya.
+Porque aquél a quien mereciste llevar, Aleluya,
+ha resucitado, según lo dijo, Aleluya.
+Ruega por nosotros a Dios, Aleluya.</strong></div></div></div>` },
+  { title: 'Versículo y Respuesta', subtitle: 'Aclamación a la Virgen', section: 'Regina Caeli', content: `<div class="prayer-block"><div class="exchange"><span class="role role-sacerdote">Sacerdote/Lector (V.)</span><div class="prayer-text poetic">Gózate y alégrate, Virgen María. Aleluya.</div></div><div class="exchange" style="margin-top: 18px"><span class="role role-pueblo">Pueblo (R.)</span><div class="prayer-text poetic">Porque ha resucitado el Señor verdaderamente. Aleluya.</div></div></div>` },
+  { title: 'Oración Final', subtitle: 'Petición de gracia pascual', section: 'Regina Caeli', content: `<div class="prayer-block"><div class="exchange"><span class="role role-todos">Todos</span><div class="prayer-text poetic"><strong>Dios mío, que por la resurrección de tu Hijo,
+nuestro Señor Jesucristo,
+te dignaste alegrar al mundo entero,
+concédenos que por su Madre, la Virgen María,
+lleguemos a los gozos de la vida eterna. Amén.</strong></div></div></div>` },
+  { title: 'Gloria Pascual', subtitle: 'Doxología trinitaria', section: 'Regina Caeli', content: `<div class="prayer-block">${GLORIA_FULL}</div>` }
+];
+
+const GUIDES = { misa: { name: 'Santa Misa', slides: MISA_SLIDES, completed: { title: 'Misa concluida', subtitle: 'Que la gracia de este momento\nacompañe tu día.' } }, angelus: { name: 'Angelus', slides: ANGELUS_SLIDES, completed: { title: 'Angelus concluido', subtitle: '«Y el Verbo se hizo carne\ny habitó entre nosotros.»' } }, reginacaeli: { name: 'Regina Caeli', slides: REGINA_CAELI_SLIDES, completed: { title: 'Regina Caeli concluido', subtitle: '«Aleluya, aleluya, aleluya.»' } } };
+
+let currentGuide = null, currentSlides = [], currentIdx = 0, aveCount = [0, 0, 0, 0, 0];
+
+function showScreen(id) { ['homeScreen', 'mysteryScreen', 'guideScreen'].forEach(s => { const el = document.getElementById(s); el.classList.remove('visible'); el.classList.add('hidden'); }); const t = document.getElementById(id); t.classList.remove('hidden'); setTimeout(() => t.classList.add('visible'), 10); }
+function goHome() { document.getElementById('completedOverlay').classList.remove('show'); aveCount = [0, 0, 0, 0, 0]; showScreen('homeScreen'); }
+function startGuide(type) { if (type === 'rosario') { showScreen('mysteryScreen'); return; } currentGuide = GUIDES[type]; currentSlides = currentGuide.slides; currentIdx = 0; document.getElementById('guideHeaderTitle').textContent = currentGuide.name; buildIndex(); renderSlide(); showScreen('guideScreen'); }
+function startRosario(tipo) { aveCount = [0, 0, 0, 0, 0]; const m = MISTERIOS[tipo]; currentGuide = { name: m.label, slides: buildRosarioSlides(tipo), completed: { title: 'Rosario concluido', subtitle: '«Dichosa tú que has creído,\nporque lo que el Señor te dijo\nse cumplirá.»' } }; currentSlides = currentGuide.slides; currentIdx = 0; document.getElementById('guideHeaderTitle').textContent = currentGuide.name; buildIndex(); renderSlide(); showScreen('guideScreen'); }
+function navigate(dir) { if (dir === 1 && currentIdx === currentSlides.length - 1) { document.getElementById('completedTitle').textContent = currentGuide.completed.title; document.getElementById('completedSubtitle').textContent = currentGuide.completed.subtitle; document.getElementById('completedOverlay').classList.add('show'); return; } currentIdx = Math.max(0, Math.min(currentSlides.length - 1, currentIdx + dir)); renderSlide(); }
+function renderSlide() { const s = currentSlides[currentIdx]; const total = currentSlides.length; document.getElementById('stepCounter').textContent = `${currentIdx + 1} / ${total}`; document.getElementById('progressFill').style.width = ((currentIdx + 1) / total * 100).toFixed(1) + '%'; document.getElementById('sectionName').textContent = s.section; const area = document.getElementById('contentArea'); area.innerHTML = `<div class="slide active"><div class="prayer-title">${s.title}</div><div class="prayer-subtitle">${s.subtitle}</div><div class="divider"></div>${s.content}</div>`; area.scrollTop = 0; if (s.isAve) initAveDots(s.aveMysteryIdx); document.getElementById('btnBack').disabled = currentIdx === 0; const btnNext = document.getElementById('btnNext'); const btnLabel = document.getElementById('btnNextLabel'); if (currentIdx === total - 1) { btnNext.classList.add('final'); btnLabel.textContent = 'Concluir'; } else { btnNext.classList.remove('final'); btnLabel.textContent = 'Siguiente'; } }
+function buildIndex() { const list = document.getElementById('indexList'); let curSection = '', html = ''; currentSlides.forEach((s, i) => { if (s.section !== curSection) { curSection = s.section; html += `<div class="index-section-title">${s.section}</div>`; } html += `<div class="index-item" onclick="goTo(${i})"><span class="index-num">${i + 1}</span><div class="index-item-name">${s.title}<small>${s.subtitle}</small></div><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>`; }); list.innerHTML = html; }
+function goTo(i) { currentIdx = i; renderSlide(); closeIndex(); }
+function openIndex() { document.getElementById('indexScreen').classList.add('open'); }
+function closeIndex() { document.getElementById('indexScreen').classList.remove('open'); }
+function initAveDots(idx) { const c = document.getElementById(`aveDots_${idx}`); if (!c) return; c.innerHTML = ''; const row1 = document.createElement('div'); row1.className = 'ave-dots'; const row2 = document.createElement('div'); row2.className = 'ave-dots'; for (let i = 0; i < 10; i++) { const d = document.createElement('div'); d.className = 'ave-dot' + (i < aveCount[idx] ? ' done' : (i === aveCount[idx] ? ' current' : '')); d.textContent = i + 1; d.onclick = () => { aveCount[idx] = (aveCount[idx] === i + 1) ? i : i + 1; initAveDots(idx); }; if (i < 5) row1.appendChild(d); else row2.appendChild(d); } c.appendChild(row1); c.appendChild(row2); const l = document.getElementById(`aveLabel_${idx}`); l.textContent = `${aveCount[idx]} de 10`; }
+function resetAve(idx) { aveCount[idx] = 0; initAveDots(idx); }
+</script>
+</body>
+</html>
