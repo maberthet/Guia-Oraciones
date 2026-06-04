@@ -92,6 +92,8 @@
   .prayer-text.poetic { white-space: pre-line; }
   /* Render emphasized tags inside prayers without bold to satisfy request */
   .prayer-text strong { font-weight: 400; font-style: inherit; }
+  /* Ensure any remaining <strong> inside the app (notes, blocks, index, etc.) is not bold */
+  .app strong, .note-box strong, .prayer-block strong { font-weight: 400 !important; font-style: inherit !important; }
   .prayer-text em { font-style: italic; color: var(--ink-muted); font-size: 13px; font-weight: 400; }
   .prayer-text strong { font-weight: 600; color: var(--ink); }
 
