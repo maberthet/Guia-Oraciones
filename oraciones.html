@@ -145,6 +145,7 @@
   /* Home button: circular like the back button */
   .btn-home { width: 50px; height: 50px; border-radius: 50%; border: 1.5px solid var(--divider); background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--ink-muted); transition: var(--transition); flex-shrink: 0; }
   .btn-home:hover { background: var(--parchment); border-color: var(--gold-light); color: var(--gold-dark); }
+  .btn-home svg { width: 20px; height: 20px; }
 
   .index-screen { display: none; position: absolute; inset: 0; background: var(--cream); z-index: 100; overflow-y: auto; padding: 40px 28px 48px; animation: fadeSlide 0.3s ease; }
   .index-screen.open { display: block; }
@@ -204,7 +205,7 @@
     <div class="guide-header"><div class="guide-header-top"><button class="btn-menu" onclick="openIndex()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button><span class="guide-header-title" id="guideHeaderTitle"></span><span class="step-counter" id="stepCounter">1 / 1</span></div><div class="progress-track"><div class="progress-fill" id="progressFill" style="width:5%"></div></div><div class="section-label"><div class="section-dot"></div><span class="section-name" id="sectionName"></span></div></div>
     <div class="content-area" id="contentArea"></div>
     <div class="bottom-nav"><div class="nav-buttons"><button type="button" class="btn-back-nav" id="btnBack" onclick="navigate(-1)" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></button><button type="button" class="btn-home" id="btnHome" onclick="goHome()" aria-label="Inicio" title="Volver al inicio">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="18" height="18">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
         <polyline points="9 22 9 12 15 12 15 22"/>
       </svg>
