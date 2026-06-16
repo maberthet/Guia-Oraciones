@@ -4,66 +4,65 @@ module.exports = async function handler(req, res) {
   res.setHeader('Content-Type', 'application/json');
 
   const date = new Date().toLocaleDateString('es-ES', {
-    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+    timeZone: 'America/Guatemala'
   });
 
-  try {
-    const response = await fetch('https://www.vaticannews.va/es/evangelio-de-hoy.html', {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
-        'Accept': 'text/html,application/xhtml+xml',
-        'Accept-Language': 'es-ES,es;q=0.9',
-      }
-    });
-
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const html = await response.text();
-
-    // Title / reference
-    const h1Match = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
-    const title = h1Match
-      ? h1Match[1].replace(/<[^>]+>/g, '').trim()
-      : 'Evangelio del día';
-
-    // Subtitle (e.g. "Jn 3, 16–21")
-    const subtitleMatch = html.match(/<(?:h2|h3|span)[^>]*class="[^"]*(?:subtitle|reference|reading)[^"]*"[^>]*>([\s\S]*?)<\/(?:h2|h3|span)>/i);
-    const subtitle = subtitleMatch
-      ? subtitleMatch[1].replace(/<[^>]+>/g, '').trim()
-      : '';
-
-    // Article body — try common Vatican News selectors
-    let raw = '';
-    const selectors = [
-      /class="[^"]*article-text[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
-      /class="[^"]*article__text[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
-      /class="[^"]*entry-content[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
-      /<article[^>]*>([\s\S]*?)<\/article>/i,
-    ];
-
-    for (const re of selectors) {
-      const m = html.match(re);
-      if (m && m[1].length > 200) { raw = m[1]; break; }
-    }
-
-    // Convert paragraphs to plain text
-    const text = raw
+  function cleanText(raw) {
+    return raw
       .replace(/<script[\s\S]*?<\/script>/gi, '')
       .replace(/<style[\s\S]*?<\/style>/gi, '')
       .replace(/<br\s*\/?>/gi, '\n')
-      .replace(/<\/p>/gi, '\n\n')
       .replace(/<[^>]+>/g, '')
       .replace(/&nbsp;/g, ' ')
-      .replace(/&laquo;/g, '«').replace(/&raquo;/g, '»')
-      .replace(/&ldquo;/g, '"').replace(/&rdquo;/g, '"')
       .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
-      .replace(/&#\d+;/g, '').replace(/&[a-z]+;/g, ' ')
-      .replace(/\n{3,}/g, '\n\n')
-      .trim();
-
-    res.end(JSON.stringify({ title, subtitle, date, text }));
-
-  } catch (err) {
-    res.statusCode = 500;
-    res.end(JSON.stringify({ error: err.message }));
+      .replace(/&ldquo;|&rdquo;/g, '"').replace(/&laquo;/g, '«').replace(/&raquo;/g, '»')
+      .replace(/&#\d+;/g, '').replace(/&[a-z]+;/g, '')
+      .replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
   }
+
+  const urls = [
+    'https://www.vaticannews.va/amp/es/evangelio-de-hoy.html',
+    'https://www.vaticannews.va/es/evangelio-de-hoy.html',
+  ];
+
+  for (const url of urls) {
+    try {
+      const r = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15',
+          'Accept': 'text/html',
+          'Accept-Language': 'es-ES,es;q=0.9',
+        },
+        signal: AbortSignal.timeout(10000),
+      });
+
+      if (!r.ok) continue;
+      const html = await r.text();
+
+      // Title from h1
+      const h1 = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
+      const title = h1 ? cleanText(h1[1]) : 'Evangelio del día';
+
+      // Collect all paragraph text — robust against any HTML structure
+      const paragraphs = [];
+      const pRe = /<p[^>]*>([\s\S]*?)<\/p>/gi;
+      let m;
+      while ((m = pRe.exec(html)) !== null) {
+        const t = cleanText(m[1]).trim();
+        // Skip nav/footer/cookie noise: must be substantial prose
+        if (t.length > 50 && !/cookie|privacidad|suscrib|©|newsletter|compartir/i.test(t)) {
+          paragraphs.push(t);
+        }
+      }
+
+      if (paragraphs.length >= 2) {
+        res.end(JSON.stringify({ title, date, text: paragraphs.join('\n\n') }));
+        return;
+      }
+    } catch (_) { continue; }
+  }
+
+  res.statusCode = 500;
+  res.end(JSON.stringify({ error: 'No se pudo cargar el evangelio' }));
 };
