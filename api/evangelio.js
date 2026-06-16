@@ -3,10 +3,13 @@ module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 's-maxage=43200, stale-while-revalidate=3600');
   res.setHeader('Content-Type', 'application/json');
 
+  // Display date in Guatemala time
   const date = new Date().toLocaleDateString('es-ES', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
     timeZone: 'America/Guatemala'
   });
+  // Guatemala date string for matching RSS items (e.g. "2026-06-16")
+  const todayGT = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Guatemala' });
 
   function decodeEntities(s) {
     return s
@@ -33,9 +36,7 @@ module.exports = async function handler(req, res) {
       .trim();
   }
 
-  function cleanText(s) {
-    return stripHtml(decodeEntities(s));
-  }
+  function cleanText(s) { return stripHtml(decodeEntities(s)); }
 
   try {
     const r = await fetch(
@@ -53,17 +54,31 @@ module.exports = async function handler(req, res) {
     if (!r.ok) throw new Error(`RSS status ${r.status}`);
     const xml = await r.text();
 
-    // Extract first <item>
-    const itemM = xml.match(/<item>([\s\S]*?)<\/item>/i);
-    if (!itemM) throw new Error('No item in RSS');
-    const item = itemM[1];
+    // Find the item whose Vatican date (Rome/+0200) matches Guatemala's today.
+    // Vatican publishes at Rome midnight (+0200). Because Rome is UTC+2 and
+    // Guatemala is UTC-6, the June 17 Vatican item has pubDate that converts
+    // to June 16 afternoon in Guatemala — so we match Vatican date to Guatemala date.
+    const allItems = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/gi)].map(m => m[1]);
+    if (!allItems.length) throw new Error('No items in RSS');
 
-    // Title (plain text or CDATA)
+    let item = allItems[0]; // fallback: latest item
+    for (const it of allItems) {
+      const pubM = it.match(/<pubDate>([\s\S]*?)<\/pubDate>/i);
+      if (pubM) {
+        try {
+          // Convert pubDate to Rome date ("2026-06-17") and compare with Guatemala today
+          const romeDate = new Date(pubM[1]).toLocaleDateString('en-CA', { timeZone: 'Europe/Rome' });
+          if (romeDate === todayGT) { item = it; break; }
+        } catch (_) {}
+      }
+    }
+
+    // Title
     const titleM = item.match(/<title><!\[CDATA\[([\s\S]*?)\]\]><\/title>/i)
                 || item.match(/<title>([\s\S]*?)<\/title>/i);
     const title = titleM ? cleanText(titleM[1]) : 'Evangelio del día';
 
-    // Description (CDATA with HTML)
+    // Description
     const descM = item.match(/<description><!\[CDATA\[([\s\S]*?)\]\]><\/description>/i)
                || item.match(/<description>([\s\S]*?)<\/description>/i);
     if (!descM) throw new Error('No description in RSS item');
@@ -71,9 +86,13 @@ module.exports = async function handler(req, res) {
     let text = cleanText(descM[1]);
     if (text.length < 80) throw new Error('Description too short');
 
-    // Keep only the Gospel section — trim first reading / psalm that come before
+    // Keep only the Gospel — trim first reading/psalm before it
     const gospelIdx = text.search(/Lectura del( santo)? evangelio/i);
     if (gospelIdx > 0) text = text.substring(gospelIdx);
+
+    // Remove Pope's reflection that follows
+    const papasIdx = text.search(/Las palabras de los (Papas|Papa)/i);
+    if (papasIdx > 0) text = text.substring(0, papasIdx).trim();
 
     res.end(JSON.stringify({ title, date, text }));
   } catch (e) {
