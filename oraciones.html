@@ -182,6 +182,7 @@
       <div class="home-subtitle">Acompañamiento para la oración personal y comunitaria.</div>
     </div>
     <div class="guide-list">
+      <div class="guide-card" onclick="startGuide('evangelio')"><div class="guide-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--gold-dark)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3h7v18H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M20 3h-9v18h9a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1z"/><line x1="6" y1="8" x2="10" y2="8"/><line x1="6" y1="11" x2="10" y2="11"/><line x1="6" y1="14" x2="10" y2="14"/></svg></div><div class="guide-info"><div class="guide-name">Evangelio del Día</div><div class="guide-desc">Vatican News · Se actualiza cada día</div></div><svg class="guide-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
       <div class="guide-card" onclick="startGuide('misa')"><div class="guide-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--gold-dark)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="6"/><line x1="10" y1="3.5" x2="14" y2="3.5"/><path d="M7 10l5-4 5 4"/><rect x="6" y="10" width="12" height="11" rx="0.5"/><path d="M10 21v-4a2 2 0 0 1 4 0v4"/><rect x="8" y="12" width="2.5" height="2.5" rx="0.5"/><rect x="13.5" y="12" width="2.5" height="2.5" rx="0.5"/></svg></div><div class="guide-info"><div class="guide-name">Santa Misa</div><div class="guide-desc">12 momentos · Oraciones completas</div></div><svg class="guide-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
       <div class="guide-card" onclick="startGuide('rosario')"><div class="guide-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--gold-dark)" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="3" x2="12" y2="21"/><line x1="6" y1="9" x2="18" y2="9"/></svg></div><div class="guide-info"><div class="guide-name">Santo Rosario</div><div class="guide-desc">4 misterios · Gozosos, Luminosos, Dolorosos, Gloriosos</div></div><svg class="guide-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
       <div class="guide-card" onclick="startGuide('consagracion')"><div class="guide-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--gold-dark)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4c0 0-5 7-5 12a5 5 0 0 0 10 0C17 11 12 4 12 4z"/><path d="M12 12c0 0-2 3-2 5a2 2 0 0 0 4 0c0-2-2-5-2-5z"/></svg></div><div class="guide-info"><div class="guide-name">Acto de Consagración</div><div class="guide-desc">A la Santísima Virgen María de los Dolores</div></div><svg class="guide-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
@@ -570,7 +571,34 @@ function togglePrep(el) {
 }
 function showScreen(id) { ['homeScreen', 'mysteryScreen', 'guideScreen'].forEach(s => { const el = document.getElementById(s); el.classList.remove('visible'); el.classList.add('hidden'); }); const t = document.getElementById(id); t.classList.remove('hidden'); setTimeout(() => t.classList.add('visible'), 10); }
 function goHome() { document.getElementById('completedOverlay').classList.remove('show'); aveCount = [0, 0, 0, 0, 0]; showScreen('homeScreen'); }
-function startGuide(type) { if (type === 'rosario') { showScreen('mysteryScreen'); return; } currentGuide = GUIDES[type]; currentSlides = currentGuide.slides; currentIdx = 0; document.getElementById('guideHeaderTitle').textContent = currentGuide.name; buildIndex(); renderSlide(); showScreen('guideScreen'); }
+async function loadEvangelio() {
+  showScreen('guideScreen');
+  document.getElementById('guideHeaderTitle').textContent = 'Evangelio del Día';
+  document.getElementById('stepCounter').textContent = '';
+  document.getElementById('progressFill').style.width = '0%';
+  document.getElementById('sectionName').textContent = 'Cargando...';
+  document.getElementById('contentArea').innerHTML = '<div class="slide active" style="display:flex;align-items:center;justify-content:center;min-height:200px;"><div style="text-align:center;color:var(--ink-muted);font-family:\'Cormorant Garamond\',serif;font-size:16px;">Cargando evangelio…</div></div>';
+  document.getElementById('btnBack').disabled = true;
+  document.getElementById('btnNext').disabled = true;
+  try {
+    const r = await fetch('/api/evangelio');
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+    const slides = [{
+      title: d.title || 'Evangelio del Día',
+      subtitle: d.subtitle || d.date || '',
+      section: 'Evangelio del Día',
+      content: `<div class="prayer-block"><div class="note-box"><p>${d.date}</p></div><div class="prayer-text poetic" style="margin-top:20px">${(d.text || '').replace(/\n\n/g,'</div><div class="prayer-text poetic" style="margin-top:12px">').replace(/\n/g,'<br>')}</div></div>`
+    }];
+    currentGuide = { name: 'Evangelio del Día', slides, completed: { title: 'Evangelio concluido', subtitle: '«La palabra de Dios es viva\ny eficaz.» — Heb 4, 12' } };
+    currentSlides = slides; currentIdx = 0;
+    buildIndex(); renderSlide();
+  } catch(e) {
+    document.getElementById('contentArea').innerHTML = '<div class="slide active"><div class="note-box"><p>No se pudo cargar el evangelio. Verifica tu conexión e intenta de nuevo.</p></div></div>';
+    document.getElementById('sectionName').textContent = '';
+  }
+}
+function startGuide(type) { if (type === 'rosario') { showScreen('mysteryScreen'); return; } if (type === 'evangelio') { loadEvangelio(); return; } currentGuide = GUIDES[type]; currentSlides = currentGuide.slides; currentIdx = 0; document.getElementById('guideHeaderTitle').textContent = currentGuide.name; buildIndex(); renderSlide(); showScreen('guideScreen'); }
 function startRosario(tipo) { aveCount = [0, 0, 0, 0, 0]; const m = MISTERIOS[tipo]; currentGuide = { name: m.label, slides: buildRosarioSlides(tipo), completed: { title: 'Rosario concluido', subtitle: '«Dichosa tú que has creído,\nporque lo que el Señor te dijo\nse cumplirá.»' } }; currentSlides = currentGuide.slides; currentIdx = 0; document.getElementById('guideHeaderTitle').textContent = currentGuide.name; buildIndex(); renderSlide(); showScreen('guideScreen'); }
 function navigate(dir) { if (!currentSlides || !currentSlides.length) return; if (dir === 1 && currentIdx === currentSlides.length - 1) { document.getElementById('completedTitle').textContent = currentGuide.completed.title; document.getElementById('completedSubtitle').textContent = currentGuide.completed.subtitle; document.getElementById('completedOverlay').classList.add('show'); return; } currentIdx = Math.max(0, Math.min(currentSlides.length - 1, currentIdx + dir)); renderSlide(); }
 function renderSlide() { const s = currentSlides[currentIdx]; const total = currentSlides.length; document.getElementById('stepCounter').textContent = `${currentIdx + 1} / ${total}`; document.getElementById('progressFill').style.width = ((currentIdx + 1) / total * 100).toFixed(1) + '%'; document.getElementById('sectionName').textContent = s.section; const area = document.getElementById('contentArea'); area.innerHTML = `<div class="slide active"><div class="prayer-title">${s.title}</div><div class="prayer-subtitle">${s.subtitle}</div><div class="divider"></div>${s.content}</div>`; area.scrollTop = 0; if (s.isAve) initAveDots(s.aveMysteryIdx); document.getElementById('btnBack').disabled = currentIdx === 0; const btnNext = document.getElementById('btnNext'); const btnLabel = document.getElementById('btnNextLabel'); btnNext.disabled = false; if (currentIdx === total - 1) { btnNext.classList.add('final'); btnLabel.textContent = 'Concluir'; } else { btnNext.classList.remove('final'); btnLabel.textContent = 'Siguiente'; } }
