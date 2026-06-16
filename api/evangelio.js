@@ -8,102 +8,72 @@ module.exports = async function handler(req, res) {
     timeZone: 'America/Guatemala'
   });
 
-  const log = [];
+  function decodeEntities(s) {
+    return s
+      .replace(/&aacute;/g,'á').replace(/&eacute;/g,'é').replace(/&iacute;/g,'í')
+      .replace(/&oacute;/g,'ó').replace(/&uacute;/g,'ú').replace(/&ntilde;/g,'ñ')
+      .replace(/&Aacute;/g,'Á').replace(/&Eacute;/g,'É').replace(/&Iacute;/g,'Í')
+      .replace(/&Oacute;/g,'Ó').replace(/&Uacute;/g,'Ú').replace(/&Ntilde;/g,'Ñ')
+      .replace(/&uuml;/g,'ü').replace(/&ouml;/g,'ö').replace(/&auml;/g,'ä')
+      .replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>')
+      .replace(/&nbsp;/g,' ').replace(/&ldquo;|&rdquo;/g,'"')
+      .replace(/&laquo;/g,'«').replace(/&raquo;/g,'»')
+      .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(+n))
+      .replace(/&[a-z]+;/g, '');
+  }
 
-  function clean(raw) {
-    return raw
-      .replace(/<script[\s\S]*?<\/script>/gi, '')
-      .replace(/<style[\s\S]*?<\/style>/gi, '')
+  function stripHtml(s) {
+    return s
       .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<p[^>]*>/gi, '\n')
+      .replace(/<\/p>/gi, '')
       .replace(/<[^>]+>/g, '')
-      .replace(/&nbsp;/g, ' ')
-      .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
-      .replace(/&ldquo;|&rdquo;/g, '"').replace(/&laquo;/g, '«').replace(/&raquo;/g, '»')
-      .replace(/&#\d+;/g, '').replace(/&[a-z]+;/g, '')
-      .replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+      .replace(/[ \t]+/g, ' ')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
   }
 
-  function extractPs(html, minLen = 50) {
-    const out = [];
-    const re = /<p[^>]*>([\s\S]*?)<\/p>/gi;
-    let m;
-    while ((m = re.exec(html)) !== null) {
-      const t = clean(m[1]).trim();
-      if (t.length >= minLen && !/cookie|privacidad|suscrib|©|newsletter|compartir|registr/i.test(t)) {
-        out.push(t);
+  function cleanText(s) {
+    return stripHtml(decodeEntities(s));
+  }
+
+  try {
+    const r = await fetch(
+      'https://www.vaticannews.va/content/vaticannews/es/evangelio-de-hoy.rss.xml',
+      {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15',
+          'Accept': 'application/rss+xml, application/xml, text/xml, */*',
+        },
+        redirect: 'follow',
+        signal: AbortSignal.timeout(10000),
       }
-    }
-    return out;
+    );
+
+    if (!r.ok) throw new Error(`RSS status ${r.status}`);
+    const xml = await r.text();
+
+    // Extract first <item>
+    const itemM = xml.match(/<item>([\s\S]*?)<\/item>/i);
+    if (!itemM) throw new Error('No item in RSS');
+    const item = itemM[1];
+
+    // Title (plain text or CDATA)
+    const titleM = item.match(/<title><!\[CDATA\[([\s\S]*?)\]\]><\/title>/i)
+                || item.match(/<title>([\s\S]*?)<\/title>/i);
+    const title = titleM ? cleanText(titleM[1]) : 'Evangelio del día';
+
+    // Description (CDATA with HTML)
+    const descM = item.match(/<description><!\[CDATA\[([\s\S]*?)\]\]><\/description>/i)
+               || item.match(/<description>([\s\S]*?)<\/description>/i);
+    if (!descM) throw new Error('No description in RSS item');
+
+    const text = cleanText(descM[1]);
+    if (text.length < 80) throw new Error('Description too short');
+
+    res.end(JSON.stringify({ title, date, text }));
+  } catch (e) {
+    res.statusCode = 500;
+    res.end(JSON.stringify({ error: 'No se pudo cargar el evangelio', detail: e.message }));
   }
-
-  const H = {
-    'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1',
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-    'Accept-Language': 'es-ES,es;q=0.9',
-  };
-
-  async function get(url) {
-    try {
-      const r = await fetch(url, { headers: H, signal: AbortSignal.timeout(9000), redirect: 'follow' });
-      const body = await r.text();
-      log.push({ url, status: r.status, len: body.length });
-      return r.ok ? body : null;
-    } catch (e) {
-      log.push({ url, err: e.message });
-      return null;
-    }
-  }
-
-  function getH1(html) {
-    const m = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
-    return m ? clean(m[1]) : 'Evangelio del día';
-  }
-
-  // 1) Vatican News RSS
-  const rssBody = await get('https://www.vaticannews.va/es/evangelio-de-hoy.rss');
-  if (rssBody) {
-    const cdataM = rssBody.match(/<!\[CDATA\[([\s\S]*?)\]\]>/g);
-    // Second CDATA in RSS is usually the description
-    const raw = cdataM && cdataM.length > 1 ? cdataM[1].replace(/<!\[CDATA\[/, '').replace(/\]\]>/, '') : null;
-    if (raw) {
-      const text = clean(raw);
-      if (text.length > 100) {
-        const titleCdata = cdataM && cdataM[0] ? cdataM[0].replace(/<!\[CDATA\[/, '').replace(/\]\]>/, '') : null;
-        const title = titleCdata ? clean(titleCdata) : 'Evangelio del día';
-        res.end(JSON.stringify({ title, date, text })); return;
-      }
-    }
-  }
-
-  // 2) Vatican News AMP
-  const ampBody = await get('https://www.vaticannews.va/amp/es/evangelio-de-hoy.html');
-  if (ampBody) {
-    const ps = extractPs(ampBody);
-    if (ps.length >= 2) {
-      res.end(JSON.stringify({ title: getH1(ampBody), date, text: ps.join('\n\n') })); return;
-    }
-  }
-
-  // 3) evangelio.blog (WordPress — simple static HTML)
-  const blogBody = await get('https://evangelio.blog/');
-  if (blogBody) {
-    const ps = extractPs(blogBody, 40);
-    if (ps.length >= 2) {
-      const h = blogBody.match(/<h[12][^>]*>([\s\S]*?)<\/h[12]>/i);
-      const title = h ? clean(h[1]) : 'Evangelio del día';
-      res.end(JSON.stringify({ title, date, text: ps.join('\n\n') })); return;
-    }
-  }
-
-  // 4) Vatican News main page (SPA — low probability, last resort)
-  const mainBody = await get('https://www.vaticannews.va/es/evangelio-de-hoy.html');
-  if (mainBody) {
-    const ps = extractPs(mainBody);
-    if (ps.length >= 2) {
-      res.end(JSON.stringify({ title: getH1(mainBody), date, text: ps.join('\n\n') })); return;
-    }
-  }
-
-  res.statusCode = 500;
-  res.end(JSON.stringify({ error: 'No se pudo cargar el evangelio', debug: log }));
 };
