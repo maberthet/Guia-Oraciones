@@ -68,8 +68,12 @@ module.exports = async function handler(req, res) {
                || item.match(/<description>([\s\S]*?)<\/description>/i);
     if (!descM) throw new Error('No description in RSS item');
 
-    const text = cleanText(descM[1]);
+    let text = cleanText(descM[1]);
     if (text.length < 80) throw new Error('Description too short');
+
+    // Keep only the Gospel section — trim first reading / psalm that come before
+    const gospelIdx = text.search(/Lectura del( santo)? evangelio/i);
+    if (gospelIdx > 0) text = text.substring(gospelIdx);
 
     res.end(JSON.stringify({ title, date, text }));
   } catch (e) {
